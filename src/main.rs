@@ -53,7 +53,7 @@ fn pretest3_callback_from_callback() {
     });
 }
 
-extern "C" fn accumulate_internal<F: FnMut(i32, *mut c_void)>(
+extern "C" fn callback_internal<F: FnMut(i32, *mut c_void)>(
     num: i32,
     closure_and_data: *mut c_void,
 ) {
@@ -69,7 +69,7 @@ extern "C" fn run_for_each_with_data<F: FnMut(i32, *mut c_void)>(
     let mut combined = (&mut closure, data);
     let ptr: *mut c_void = &mut combined as *mut _ as *mut c_void;
     unsafe {
-        for_each_interesting_number(accumulate_internal::<F>, ptr);
+        for_each_interesting_number(callback_internal::<F>, ptr);
     }
 }
 
@@ -87,6 +87,25 @@ fn pretest4_accumulate_from_callback() {
     );
 
     println!("after accumulate, vec[0] value = {}", vec[0]);
+    assert_eq!(vec[0], 77);
+}
+
+fn pretest5_insert_from_callback() {
+    println!("\nbelow is pretest5_insert_from_callback");
+
+    let mut vec = vec![0i32];
+    let vec_ptr = &mut vec as *mut _ as *mut c_void;
+
+    run_for_each_with_data(
+        |num, vec_ptr: *mut c_void| {
+            let vec: &mut Vec<i32> = unsafe { &mut *(vec_ptr as *mut Vec<i32>) };
+            vec.push(num);
+        },
+        vec_ptr,
+    );
+
+    println!("after insert, vec = {:?}", vec);
+    assert_eq!(vec, vec![0, 2, 3, 5, 7, 11, 13, 17, 19]);
 }
 
 fn main() {
@@ -94,4 +113,5 @@ fn main() {
     pretest2_accumulate_into_vec();
     pretest3_callback_from_callback();
     pretest4_accumulate_from_callback();
+    pretest5_insert_from_callback();
 }
